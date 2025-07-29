@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="fi">
+<head>
+  <meta charset="UTF-8">
+  <title>Gym Trainer</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      margin: 0;
+      padding: 0;
+      background-color: #f5f5f5;
+    }
+    header {
+      background: #222;
+      color: #fff;
+      padding: 15px;
+      text-align: center;
+    }
+    nav {
+      display: flex;
+      justify-content: center;
+      gap: 15px;
+      background-color: #333;
+    }
+    nav button {
+      background: none;
+      border: none;
+      color: #fff;
+      padding: 14px;
+      cursor: pointer;
+      font-size: 16px;
+    }
+    nav button:hover {
+      background: #444;
+    }
+    main {
+      padding: 20px;
+      max-width: 900px;
+      margin: auto;
+    }
+    .section {
+      display: none;
+      background: #fff;
+      border-radius: 8px;
+      padding: 20px;
+      box-shadow: 0 0 10px #ccc;
+      margin-top: 20px;
+    }
+    .active {
+      display: block;
+    }
+    .exercise-card {
+      display: inline-block;
+      width: 140px;
+      margin: 10px;
+      text-align: center;
+    }
+    .exercise-card img {
+      width: 100px;
+      height: 100px;
+      object-fit: cover;
+      border-radius: 8px;
+      margin-bottom: 5px;
+    }
+    input[type="text"] {
+      padding: 8px;
+      font-size: 16px;
+      margin-right: 10px;
+    }
+    button {
+      padding: 8px 12px;
+      background: #007bff;
+      border: none;
+      color: white;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    button:hover {
+      background: #0056b3;
+    }
+    h2 {
+      border-bottom: 2px solid #ddd;
+      padding-bottom: 10px;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>🏋️ Gym Trainer</h1>
+  </header>
+
+  <nav>
+    <button onclick="showSection('start')">Aloitus</button>
+    <button onclick="showSection('workout')">Treenit</button>
+    <button onclick="showSection('records')">Ennätykset</button>
+    <button onclick="showSection('history')">Historia</button>
+  </nav>
+
+  <main>
+    <div id="start" class="section active">
+      <h2>Luo käyttäjä</h2>
+      <input type="text" id="usernameInput" placeholder="Käyttäjänimi">
+      <button onclick="createUser()">Aloita</button>
+    </div>
+
+    <div id="workout" class="section">
+      <h2>Valitse liikkeet</h2>
+      <div id="exerciseList"></div>
+      <button onclick="startWorkout()">Aloita treeni</button>
+      <div id="workoutArea"></div>
+      <button onclick="saveWorkout()">💾 Tallenna treeni</button>
+    </div>
+
+    <div id="records" class="section">
+      <h2>Ennätykset</h2>
+      <div id="recordsArea"></div>
+    </div>
+
+    <div id="history" class="section">
+      <h2>Treenihistoria</h2>
+      <div id="historyArea"></div>
+    </div>
+  </main>
+
+  <script>
+    const exercises = [
+      { name: "Kyykky", img: "https://www.bodybuilding.com/images/2021/january/squat-700xh.jpg" },
+      { name: "Penkki", img: "https://www.bodybuilding.com/images/2021/january/bench-press-700xh.jpg" },
+      { name: "Maastaveto", img: "https://www.bodybuilding.com/images/2021/january/deadlift-700xh.jpg" },
+      { name: "Leuanveto", img: "https://www.bodybuilding.com/images/2021/january/pullup-700xh.jpg" },
+      { name: "Pystypunnerrus", img: "https://www.bodybuilding.com/images/2021/january/shoulder-press-700xh.jpg" }
+    ];
+    let currentUser = null;
+    let data = {};
+
+    function showSection(id) {
+      document.querySelectorAll(".section").forEach(s => s.classList.remove("active"));
+      document.getElementById(id).classList.add("active");
+    }
+
+    function saveData() {
+      localStorage.setItem("gymTrainerData", JSON.stringify(data));
+    }
+
+    function loadData() {
+      const stored = localStorage.getItem("gymTrainerData");
+      if (stored) {
+        data = JSON.parse(stored);
+      }
+    }
+
+    function createUser() {
+      const username = document.getElementById("usernameInput").value.trim();
+      if (!username) {
+        alert("Anna käyttäjänimi.");
+        return;
+      }
+      currentUser = username;
+      if (!data[username]) {
+        data[username] = { records: {}, history: [] };
+      }
+      localStorage.setItem("gymTrainerCurrentUser", username);
+      saveData();
+      showSection("workout");
+      renderExercises();
+      showRecords();
+      showHistory();
+    }
+
+    function renderExercises() {
+      const list = document.getElementById("exerciseList");
+      list.innerHTML = "";
+      exercises.forEach(ex => {
+        const div = document.createElement("div");
+        div.className = "exercise-card";
+        div.innerHTML = `
+          <label>
+            <input type="checkbox" value="${ex.name}">
+            <div><img src="${ex.img}" alt="${ex.name}"><br>${ex.name}</div>
+          </label>
+        `;
+        list.appendChild(div);
+      });
+    }
+
+    function startWorkout() {
+      const selected = Array.from(document.querySelectorAll('input[type="checkbox"]:checked')).map(cb => cb.value);
+      if (selected.length === 0) {
+        alert("Valitse vähintään yksi liike!");
+        return;
+      }
+      const area = document.getElementById("workoutArea");
+      area.innerHTML = "";
+      selected.forEach(name => {
+        area.innerHTML += `
+          <div style="margin-top:15px">
+            <h4>${name}</h4>
+            Paino: <input type="number" id="${name}-weight" placeholder="kg"> 
+            Toistot: <input type="number" id="${name}-reps" placeholder="kpl">
+          </div>
+        `;
+      });
+    }
+
+    function saveWorkout() {
+      const selected = Array.from(document.querySelectorAll('input[type="checkbox"]:checked')).map(cb => cb.value);
+      const workout = { date: new Date().toLocaleString(), sets: [] };
+      selected.forEach(name => {
+        const weight = document.getElementById(`${name}-weight`).value;
+        const reps = document.getElementById(`${name}-reps`).value;
+        workout.sets.push({ name, weight, reps });
+
+        // Ennätys
+        if (!data[currentUser].records[name] || weight > data[currentUser].records[name]) {
+          data[currentUser].records[name] = weight;
+        }
+      });
+      data[currentUser].history.push(workout);
+      saveData();
+      showRecords();
+      showHistory();
+      alert("Treenit tallennettu!");
+    }
+
+    function showRecords() {
+      const div = document.getElementById("recordsArea");
+      div.innerHTML = "";
+      const records = data[currentUser]?.records || {};
+      for (let name in records) {
+        div.innerHTML += `<p><strong>${name}:</strong> ${records[name]} kg</p>`;
+      }
+    }
+
+    function showHistory() {
+      const div = document.getElementById("historyArea");
+      div.innerHTML = "";
+      const history = data[currentUser]?.history || [];
+      history.reverse().forEach(h => {
+        div.innerHTML += `<p><strong>${h.date}</strong><br>${h.sets.map(s => `${s.name}: ${s.weight}kg × ${s.reps}`).join('<br>')}</p><hr>`;
+      });
+    }
+
+    // Automaattinen sisäänkirjautuminen
+    window.onload = () => {
+      loadData();
+      const saved = localStorage.getItem("gymTrainerCurrentUser");
+      if (saved && data[saved]) {
+        currentUser = saved;
+        showSection("workout");
+        renderExercises();
+        showRecords();
+        showHistory();
+      }
+    };
+  </script>
+</body>
+</html>
